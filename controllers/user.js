@@ -2,6 +2,7 @@ const db = require("../models");
 const Op = db.Sequelize.Op;
 const User = db.User;
 var date = new Date();
+const bcrypt = require("bcrypt");
 // creating and save a new user
 exports.create = (req, res) => {
     //validation
@@ -57,7 +58,7 @@ exports.create = (req, res) => {
         phone: req.body.phone || null,
         gender: req.body.gender,
         type: req.body.type || null,
-        password: req.body.password,
+        password: bcrypt.hashSync(req.body.password, 8),
         image: req.body.image || null,
     }
 
@@ -69,8 +70,8 @@ exports.create = (req, res) => {
             res.json(data);
         })
         .catch(err => {
+            console.log(err);
             res.status(400).json( {
-                data: user,
                 message : err.message || "Some error occurred while creating user"
             });
         });

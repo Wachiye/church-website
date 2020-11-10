@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
+const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
 const churchRoutes = require("./routes/church");
 const messageRoutes = require("./routes/message");
@@ -22,6 +23,9 @@ var corsOption = {
 
 app.use(cors(corsOption));
 
+//tabbed json responses
+app.set("json spaces", 4);
+
 //parse request by content type --application/json and -application/x-www-form-urlencoded
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true }));
@@ -34,6 +38,7 @@ app.get("/", (req, res) =>{
     });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/church", churchRoutes);
 app.use("/api/sermons", sermonRoutes);
@@ -42,12 +47,15 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/ministries", ministryRoutes);
 app.use("/api/events",eventRoutes);
 app.use("/api/donations", donationRoutes);
-// app.use("/api/pastors", pastorRoutes);
-// app.use("/api/leaders", leaderRoutes);
-// app.use("/api/sermons", sermonRoutes);
-// app.use("/api/donations", donationRoutes);
-// app.use("/api/pst-sessions", pstSessionRoutes);
+app.use("/api/sermons", sermonRoutes);
+app.use("/api/donations", donationRoutes);
 
+//error handling
+app.use( (err, req, res, next) => {
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+    res.status(err.status || 500).json(err);
+});
 //listen for requests
 app.listen(PORT, () =>{
     console.log(`Server is running on port ${PORT}`);

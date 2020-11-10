@@ -1,24 +1,25 @@
 const express = require("express");
 const resourceController = require("../controllers/resource");
+const { verify } = require("../middleware/auth");
 
 const router = express.Router();
 
 //create a new resource
-router.post("/", resourceController.create);
+router.post("/", verify, resourceController.create);
 
-//retrieve all testimonies
+//retrieve all resources
 router.get("/", resourceController.findAll);
 
 //retrieve a single resource
 router.get("/:id", resourceController.findOne);
 
 // update a resource with id
-router.put("/:id", resourceController.update);
+router.put("/:id", verify,  resourceController.update);
 
 //delete a single resource
-router.delete("/:id", resourceController.delete);
+router.delete("/:id", verify,  resourceController.delete);
 
-//delete all testimonies
-router.delete("/", resourceController.deleteAll);
+//delete all resources
+router.delete("/", verify, resourceController.deleteAll);
 
 module.exports = router;
