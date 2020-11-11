@@ -20,10 +20,12 @@
   "dependencies": {
     "bcrypt": "^5.0.0",
     "body-parser": "latest",
+    "cloudinary": "^1.23.0",
     "cookie-parser": "^1.4.5",
     "cors": "latest",
     "dotenv": "latest",
     "express": "latest",
+    "express-fileupload": "^1.2.0",
     "express-session": "^1.17.1",
     "helmet": "^4.2.0",
     "http-errors": "^1.8.0",
@@ -31,6 +33,7 @@
     "jwt-simple": "^0.5.6",
     "morgan": "^1.10.0",
     "mysql2": "latest",
+    "nodemailer": "^6.4.15",
     "passport": "^0.4.1",
     "sequelize": "latest",
     "uuid": "^8.3.1"
