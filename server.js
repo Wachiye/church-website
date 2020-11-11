@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const morgan = require("morgan");
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
@@ -22,7 +23,7 @@ var corsOption = {
 };
 
 app.use(cors(corsOption));
-
+app.use(morgan('dev'));
 //tabbed json responses
 app.set("json spaces", 4);
 

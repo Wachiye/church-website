@@ -34,6 +34,7 @@
     "morgan": "^1.10.0",
     "mysql2": "latest",
     "nodemailer": "^6.4.15",
+    "nodemailer-smtp-transport": "^2.7.4",
     "passport": "^0.4.1",
     "sequelize": "latest",
     "uuid": "^8.3.1"

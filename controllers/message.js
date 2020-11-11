@@ -1,5 +1,6 @@
 const db = require("../models");
 const Message = db.Message;
+const mailerController = require("./mailer");
 
 // creating and save a new Message
 exports.create = (req, res) => {
@@ -44,10 +45,27 @@ exports.create = (req, res) => {
     }
 
     //save
-    Message.create(message)
-        .then(data => {
+     Message.create(message)
+        .then( async data => {
+            req.body.subject = "New Contact Message"
+            let emailContent = `<p>Hi, you have a new message</p><br/>
+                <p>From: ${data.name}<br/>
+                    Email: ${data.email} <br/>
+                    Phone: ${data.phone} <br/>
+                    Date: ${data.createAt} <br/>
+                </p> <br/>
+                <p>${data.message}</p>
+                `;
+            req.body.message = emailContent;
+
+            let emailResponse = await mailerController.sendEmail(req, res);
+            
+            await mailerController.autoContactResponse(req, res);
+
             res.json({
-                message : "Message details added successfully"
+                message : {
+                    message: emailResponse.message + ".Message details added successfully to the server"
+                }
             });
         })
         .catch(err => {
