@@ -2,9 +2,11 @@ const db = require("../models");
 const Op = db.Sequelize.Op;
 const User = db.User;
 var date = new Date();
+const uploaderController = require("./uploader");
+const cloudinary = require("../utils/cloudinary");
 const bcrypt = require("bcrypt");
 // creating and save a new user
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
     //validation
     if(!req.body){
         res.status(400).json( {
@@ -48,6 +50,7 @@ exports.create = (req, res) => {
         }); 
         return;
     }
+
     //create user
     const user = {
         first_name: req.body.first_name,
@@ -58,15 +61,18 @@ exports.create = (req, res) => {
         phone: req.body.phone || null,
         gender: req.body.gender,
         type: req.body.type || null,
-        password: bcrypt.hashSync(req.body.password, 8),
-        image: req.body.image || null,
+        password: bcrypt.hashSync(req.body.password, 8)
     }
 
-    //hash password here
+    //upload file to cloudinary
+    let uploadedImage = await cloudinary.uploader.upload(req.file.path,
+        {folder:"church-test", public_id: user.username});
+    //get the file url
+    user.image = req.file ? uploadedImage.secure_url : null;
     
     //save user
     User.create(user)
-        .then(data=>{
+        .then( async data =>{
             res.json(data);
         })
         .catch(err => {
@@ -118,9 +124,14 @@ exports.findAll = (req, res) => {
 };
 
 //update a user by the id
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
     const id = req.params.id;
-
+    let uploadedImage;
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path,
+            {folder:"church-test", public_id: req.body.username});
+        req.body.image = uploadedImage.secure_url;
+    }
     User.update(req.body, {
         where:{ id: id}
     })

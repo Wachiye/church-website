@@ -1,8 +1,10 @@
 const db = require("../models");
 const Ministry = db.Ministry;
 
+const cloudinary = require("../utils/cloudinary");
+
 // creating and save a new Ministry
-exports.create = (req, res) => {
+exports.create = async(req, res) => {
     //validation
     if(!req.body){
         res.status(400).json({
@@ -25,14 +27,19 @@ exports.create = (req, res) => {
     //instantiate a Ministry object
     var ministry = {
         name : req.body.name,
-        description: req.body.description,
-        image: req.body.image || null
+        description: req.body.description
     }
 
+    let uploadedImage;
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        ministry.image = uploadedImage.secure_url;
+    }
     //save
     Ministry.create(ministry)
         .then(data => {
             res.json({
+                data: data,
                 message : "Ministry details added successfully"
             });
         })
@@ -90,9 +97,13 @@ exports.findAll = (req, res) => {
 };
 
 //update a Ministry by the id
-exports.update = (req, res) => {
+exports.update = async(req, res) => {
     const id = req.params.id;
-
+    let uploadedImage;
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        req.body.image = uploadedImage.secure_url;
+    }
     Ministry.update(req.body, {
         where:{ id: id}
     })

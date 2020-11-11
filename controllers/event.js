@@ -3,7 +3,7 @@ const Op = db.Sequelize.Op;
 const Event = db.Event;
 
 // creating and save a new Event
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
     //validation
     if(!req.body){
         res.status(400).json( {
@@ -41,10 +41,15 @@ exports.create = (req, res) => {
 		description: req.body.description,
 		from: req.body.from,
 		to: req.body.to,
-        ministry_id: req.body.ministry_id || null,
-        image: req.body.image || "/img/event.jpg" 
+        ministry_id: req.body.ministry_id || null
     }
 
+    let uploadedImage;
+
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        event.image = uploadedImage.secure_url;
+    }
     //save Event
     Event.create(event)
         .then(data=>{
@@ -98,8 +103,14 @@ exports.findAll = (req, res) => {
 };
 
 //update a Event by the id
-exports.update = (req, res) => {
+exports.update = async(req, res) => {
     const id = req.params.id;
+    let uploadedImage;
+
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        req.body.image = uploadedImage.secure_url;
+    }
 
     Event.update(req.body, {
         where:{ id: id}

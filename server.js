@@ -12,7 +12,7 @@ const resourceRoutes =  require("./routes/resource");
 const ministryRoutes = require("./routes/ministry");
 const eventRoutes = require('./routes/event');
 const donationRoutes = require("./routes/donation");
-
+const uploadRoutes = require("./routes/uploader");
 const app = express();
 
 //set port
@@ -50,7 +50,7 @@ app.use("/api/events",eventRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/sermons", sermonRoutes);
 app.use("/api/donations", donationRoutes);
-
+app.use("/api/upload", uploadRoutes);
 //error handling
 app.use( (err, req, res, next) => {
     res.locals.message = err.message;

@@ -1,9 +1,9 @@
 const db = require("../models");
 const Op = db.Sequelize.Op;
 const Church = db.Church;
-
+const cloudinary = require("../utils/cloudinary");
 // creating and save a new church
-exports.create = (req, res) => {
+exports.create =  async(req, res) => {
     //validation
     if(!req.body){
         res.status(400).json({
@@ -53,10 +53,15 @@ exports.create = (req, res) => {
         tag: req.body.tag,
         email: req.body.email || null,
         phone: req.body.phone || null,
-        address: req.body.address,
-        image: req.body.image || null,
+        address: req.body.address
     }
 
+    let uploadedImage;
+
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        church.image = uploadedImage.secure_url;
+    }
     //save
     Church.create(church)
         .then(data => {
@@ -112,9 +117,14 @@ exports.findAll = (req, res) => {
 };
 
 //update a Church by the id
-exports.update = (req, res) => {
+exports.update = async(req, res) => {
     const id = req.params.id;
+    let uploadedImage;
 
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path);
+        req.body.image = uploadedImage.secure_url;
+    }
     Church.update(req.body, {
         where:{ id: id}
     })

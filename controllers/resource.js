@@ -1,9 +1,9 @@
 const db = require("../models");
 const Op = db.Sequelize.Op;
 const Resource = db.Resource;
-
+const cloudinary = require("../utils/cloudinary");
 // creating and save a new Resource
-exports.create = (req, res) => {
+exports.create = async(req, res) => {
     //validation
     if(!req.body){
         res.status(400).json({
@@ -38,7 +38,7 @@ exports.create = (req, res) => {
         }
         req.body.content = req.body.description
     }
-    if(!req.body.image){
+    if(!req.file){
         res.status(400).json({
            message: "Error: Resource thumbnail image(url) is required."
         });
@@ -56,15 +56,19 @@ exports.create = (req, res) => {
         title: req.body.title,
         description: req.body.description,
         content: req.body.content,
-        url: req.body.url || null,
-        image: req.body.image,
+        url: req.body.url || null
     }
- 
-    
+    //upload file to cloudinary
+    let uploadedImage = await cloudinary.uploader.upload(req.file.path,
+        {folder:"church-test", public_id: resource.title});
+    //get the file url
+    resource.image = uploadedImage.secure_url;
+
     //save
     Resource.create(resource)
         .then(data => {
             res.json({
+                data: data,
                 message : "Resource details added successfully"
             });
         })
@@ -125,8 +129,15 @@ exports.findAll = (req, res) => {
 };
 
 //update a Resource by the id
-exports.update = (req, res) => {
+exports.update = async(req, res) => {
     const id = req.params.id;
+    let uploadedImage;
+
+    if(req.file){
+        uploadedImage = await cloudinary.uploader.upload(req.file.path,
+            {folder:"church-test", public_id: req.body.title});
+        req.body.image = uploadedImage.secure_url;
+    }
 
     Resource.update(req.body, {
         where:{ id: id}
