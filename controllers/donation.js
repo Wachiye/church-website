@@ -1,9 +1,10 @@
 const db = require("../models");
 const Op = db.Sequelize.Op;
 const Donation = db.Donation;
-
+const moment = require("moment");
+const request = require("request");
 // creating and save a new Donation
-exports.create = (req, res) => {
+exports.create = async(req, res) => {
     //validation
     if(!req.body){
         res.status(400).json( {
@@ -17,12 +18,12 @@ exports.create = (req, res) => {
         });
         return;
 	}
-    if(!req.body.transaction_id){
-        res.status(400).json( {
-            message : "Error: Donation transaction_id is required"
-        });
-        return;
-	}
+    // if(!req.body.transaction_id){
+    //     res.status(400).json( {
+    //         message : "Error: Donation transaction_id is required"
+    //     });
+    //     return;
+	// }
 	if(!req.body.user_id){
         res.status(400).json( {
             message : "Error: User_id is required"
@@ -38,22 +39,24 @@ exports.create = (req, res) => {
     //create Donation
     const donation = {
         type: req.body.type,
-		transaction_id: req.body.transaction_id,
-		purpose: req.body.purpose || req.body.type,
+        purpose: req.body.purpose || req.body.type,
+        phone: req.body.phone,
 		user_id: req.body.user_id, //current session user_id
         amount: req.body.amount || 0.00 
     }
-
+    console.log(donation, req.access_token)
+    let transaction = await mpesaTransaction(req.access_token, donation);
+    res.json(transaction);
     //save Donation
-    Donation.create(donation)
-        .then(data=>{
-            res.json(data);
-        })
-        .catch(err => {
-            res.status(400).json( {
-                message : err.message || "Some error occurred while creating Donation"
-            });
-        });
+    // Donation.create(donation)
+    //     .then(data=>{
+    //         res.json(data);
+    //     })
+    //     .catch(err => {
+    //         res.status(400).json( {
+    //             message : err.message || "Some error occurred while creating Donation"
+    //         });
+    //     });
 };
 
 //find a single Donation with an id
@@ -186,3 +189,47 @@ exports.findAllToday = (req, res) => {
         })
     });
 };
+
+var mpesaTransaction = (token, donation) => {
+    return new Promise ( (resolve, reject) => {
+        let endpoint = process.env.MPESA_PROCESSING_URL;
+        let auth = `Bearer ${token}`;
+        let shortcode = process.env.MPESA_SHORTCODE;
+        let passkey = process.env.MPESA_PASSKEY;
+        let timestamp = moment().format('YYYYMMDDHHmmss');
+
+        const password = process.env.MPESA_INITIATOR_PASSWORD;
+
+        request(
+            {
+                url: endpoint,
+                method: "POST",
+                headers: {
+                    'Authorization': auth
+            },
+            json: {
+                "BusinessShortCode": shortcode,
+                "Password": password,
+                "Timestamp": `${timestamp}`,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount":donation.amount,
+                "PartyA":donation.phone,
+                "PartyB": shortcode,
+                "PhoneNumber": donation.phone,
+                "CallBackURL": "http://localhost:8090/api/donations/",
+                "AccountReference": donation.type,
+                "TransactionDesc": donation.purpose
+                }
+            },
+
+            function(error, response, body){
+                if(error){
+                    reject(`${JSON.stringify(error)}`);
+                }
+                else{
+                    resolve(`${JSON.stringify(body)}`);
+                }
+            }
+        );
+    });   
+}

@@ -1,10 +1,11 @@
 const express = require("express");
 const donationController = require("../controllers/donation");
 const {verify} = require("../middleware/auth");
+const {access} = require("../middleware/mpesa");
 const router = express.Router();
 
-//create a new donation
-router.post("/", donationController.create);
+//create a new mpesa donation
+router.post("/", access, donationController.create);
 
 //retrieve all donations
 router.get("/", verify, donationController.findAll);
