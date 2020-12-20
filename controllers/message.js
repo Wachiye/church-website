@@ -2,53 +2,60 @@ const db = require("../models");
 const Message = db.Message;
 const mailerController = require("./mailer");
 
+const responseHandler = require("../utils/responseHandler");
 // creating and save a new Message
 exports.create = (req, res) => {
-    //validation
-    if(!req.body){
-        res.status(400).json({
-           message: "Error: Empty  fields"
-        });
-        return;
-    }
-    if(!req.body.name){
-        res.status(400).json({
-           message: "Error: name is required."
-        });
-        return;
-    }
-    if(!req.body.email){
-        res.status(400).json({
-           message: "Error: Email is required."
-        });
-        return;
-    }
-    if(!req.body.phone){
-        res.status(400).json({
-           message: "Error: Phone No is required."
-        });
-        return;
-    }
-    if(!req.body.message){
-        res.status(400).json({
-           message: "Error:Message is required"
-        });
-        return;
-    }
+  //validation
+  if (!req.body) {
+    return responseHandler.sendFailure(res, {
+      code: 400,
+      name: "missing_field",
+      message: "name/email/phone/subject/message missing",
+    });
+  }
+  if (!req.body.name) {
+    return responseHandler.sendFailure(res, {
+      code: 400,
+      name: "missing_field",
+      message: "name missing",
+    });
+  }
+  if (!req.body.email) {
+    return responseHandler.sendFailure(res, {
+      code: 400,
+      name: "missing_field",
+      message: "email missing",
+    });
+  }
+  if (!req.body.phone) {
+    return responseHandler.sendFailure(res, {
+      code: 400,
+      name: "missing_field",
+      message: "phone missing",
+    });
+  }
+  if (!req.body.message) {
+    return responseHandler.sendFailure(res, {
+      code: 400,
+      name: "missing_field",
+      message: "message missing",
+    });
+  }
 
-    //instantiate a Message object
-    var message = {
-        name: req.body.name,
-        email: req.body.email,
-        phone : req.body.phone,
-        message: req.body.message
-    }
+  //instantiate a Message object
+  var message = {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+    message: req.body.message,
+    subject: req.body.subject || "New Contact Message",
+  };
 
-    //save
-     Message.create(message)
-        .then( async data => {
-            req.body.subject = "New Contact Message"
-            let emailContent = `<p>Hi, you have a new message</p><br/>
+  //save
+  Message.create(message)
+    .then(async (data) => {
+      req.body.subject = req.body.subject || "New Contact Message";
+      let emailContent = `<p>Hi, you have a new message</p><br/>
                 <p>From: ${data.name}<br/>
                     Email: ${data.email} <br/>
                     Phone: ${data.phone} <br/>
@@ -56,138 +63,168 @@ exports.create = (req, res) => {
                 </p> <br/>
                 <p>${data.message}</p>
                 `;
-            req.body.message = emailContent;
+      req.body.message = emailContent;
 
-            let emailResponse = await mailerController.sendEmail(req, res);
-            
-            await mailerController.autoContactResponse(req, res);
+      // let emailResponse = await mailerController.sendEmail(req, res);
 
-            res.json({
-                message : {
-                    message: emailResponse.message + ".Message details added successfully to the server"
-                }
-            });
-        })
-        .catch(err => {
-            res.status(500).json({
-                message: err.message || "Some error occurred while adding Message details"
-            });
-        });
+      // await mailerController.autoContactResponse(req, res);
+
+      return responseHandler.sendSuccess(res, {
+        message: (emailResponse.message += "message send successfully"),
+      });
+    })
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
+    });
 };
 
 //find a single Message with an id
 exports.findOne = (req, res) => {
-    const id = req.params.id
-    Message.findOne({
-        where: {
-            id: id
-        }
-    })
-    .then( data => {
-        if(!data){
-            res.json({
-                message:"No Message found"
-            });
-            return;
-        }
-        res.json(data);
-    })
-    .catch(err => {
-        res.status(500).json({
-            message: err.message || `Some error occurred while fetching Message width id: ${id}`
+  const id = req.params.id;
+  Message.findOne({
+    where: {
+      id: id,
+    },
+  })
+    .then((data) => {
+      if (!data) {
+        return responseHandler.sendFailure(res, {
+          code: 400,
+          name: "empty_data_set",
+          message: "no message records were found",
         });
+      } else {
+        return responseHandler.sendSuccess(res, data);
+      }
+    })
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
     });
 };
 
 // retrieve all Messages from the database
 exports.findAll = (req, res) => {
-    Message.findAll({
-        where: req.query || null
-    })
-        .then( data => {
-            if(!data){
-                res.json({
-                    message:"No Messages found"
-                });
-                return;
-            }
-            console.log(data.length)
-            res.json(data);
-        })
-        .catch(err => {
-            res.status(500).json({
-                message: err.message || "Some error occurred while fetching Messages"
-            });
+  Message.findAll({
+    where: req.query || null,
+  })
+    .then((data) => {
+      if (!data) {
+        return responseHandler.sendFailure(res, {
+          code: 400,
+          name: "empty_data_set",
+          message: "no message records were found",
         });
-
+      } else {
+        return responseHandler.sendSuccess(res, data);
+      }
+    })
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
+    });
 };
 
 //update a Message by the id
 exports.update = (req, res) => {
-    const id = req.params.id;
+  const id = req.params.id;
 
-    Message.update(req.body, {
-        where:{ id: id}
-    })
-    .then( num => {
-        if(num == 1){
-            res.json({
-                message: "Message was updated successfully"
-            });
-        }
-        else{
-            res.json({
-                message: `Cannot update Message with id = ${id}. Message not found/ Empty data supplied`
-            });
-        }
-    })
-    .catch( err => {
-        res.status(500).json({
-            message: err.message || `Error updating Message with id = $(id)`
+  Message.update(req.body, {
+    where: { id: id },
+  })
+    .then((num) => {
+      if (num == 1) {
+        return responseHandler.sendSuccess(res, {
+          message: "message was updated successfully",
         });
+      } else {
+        return responseHandler.sendFailure(res, {
+          code: 400,
+          name: "no_such_message",
+          message: `Cannot update message with id = ${id}. Message not found/ Empty data supplied`,
+        });
+      }
+    })
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
     });
 };
 
 //delete a Message with the specified id
 exports.delete = (req, res) => {
-    const id = req.params.id;
+  const id = req.params.id;
 
-    Message.destroy({
-        where:{ id: id}
-    })
-    .then( num => {
-        if(num == 1){
-            res.json({
-                message: "Message was deleted successfully"
-            });
-        }
-        else{
-            res.json({
-                message: `Cannot delete Message with id = ${id}. Message not found!`
-            });
-        }
-    })
-    .catch( err => {
-        res.status(500).json({
-            message: err.message || `Error deleting Message with id = $(id)`
+  Message.destroy({
+    where: { id: id },
+  })
+    .then((num) => {
+      if (num == 1) {
+        return responseHandler.sendSuccess(
+          res,
+          {
+            message: "message was deleted successfully",
+          },
+          204
+        );
+      } else {
+        return responseHandler.sendFailure(res, {
+          code: 400,
+          name: "no_such_message",
+          message: `Cannot delete message with id = ${id}. message not found/ Empty data supplied`,
         });
+      }
+    })
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
     });
 };
 
 //delete all Messages from the database
 exports.deleteAll = (req, res) => {
-    Message.destroy({
-        where:{ }, truncate: false
-    })
-    .then( nums => {
-        res.json({
-            message: `${nums} Messages were deleted successfully`
+  Message.destroy({
+    where: {},
+    truncate: false,
+  })
+    .then((nums) => {
+      if (nums > 0) {
+        return responseHandler.sendSuccess(
+          res,
+          {
+            message: `${nums} messages deleted successfully`,
+          },
+          204
+        );
+      } else {
+        return responseHandler.sendFailure(res, {
+          code: 400,
+          name: "empty_data_set",
+          message: "no message records were found",
         });
-        
+      }
     })
-    .catch( err => {
-        res.status(500).json({
-            message: err.message || `Error deleting  all Messages`
-        });
+    .catch((err) => {
+      return responseHandler.sendFailure(res, {
+        code: 500,
+        name: "database_err",
+        message: err.message || null,
+      });
     });
 };

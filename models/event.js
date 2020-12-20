@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
     image: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    status:{
+      allowNull: false,
+      type: DataTypes.ENUM("active","pending","finished"),
+      defaultValue: 'pending'
     }
   }, {
     sequelize,

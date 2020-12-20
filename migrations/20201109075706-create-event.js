@@ -26,6 +26,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      status:{
+        allowNull: false,
+        type: Sequelize.ENUM("active","pending","finished"),
+        defaultValue: 'pending'
+      },
       ministry_id :{
         type: Sequelize.UUID,
         onDelete: "CASCADE",

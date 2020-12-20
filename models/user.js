@@ -60,17 +60,17 @@ module.exports = (sequelize, DataTypes) => {
     username: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true
+      unique: [true, "Username already exists"]
     },
     email: {
       type: DataTypes.STRING,
       allowNull: true,
-      unique: true
+      unique: [true, "Email already exists"]
     },
     phone: {
       type: DataTypes.STRING,
       allowNull: true,
-      unique: true
+      unique: [true, "Phone Number already exists"]
     },
     gender: {
       type: DataTypes.ENUM("male", "female"),

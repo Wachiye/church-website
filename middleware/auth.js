@@ -6,7 +6,7 @@ const Login = db.Login;
 exports.verify = (req, res, next) => {
    try {
        const authorization = req.header('Authorization');
-
+       
        if(!authorization){
            res.status(401).json({
                message: "Error: Access Denied. You are not authorized to do this action.Please login"
@@ -35,6 +35,7 @@ exports.verify = (req, res, next) => {
             next();
         })
         .catch( err => {
+            console.log(err)
             res.status(500).json({
                 message: "Error: Access Denied. Could not verify user credentials. Try again later"
             });

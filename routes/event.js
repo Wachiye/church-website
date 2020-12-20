@@ -15,6 +15,9 @@ router.get("/today", eventController.findAllToday);
 //retrieve upcoming events
 router.get("/upcoming", eventController.findAllUpcoming);
 
+//retrieve today's or upcoming events
+router.get("/today-or-upcoming", eventController.findAllTodayOrUpcoming);
+
 //retrieve finished events
 router.get("/finished", verify, eventController.findAllFinished);
 

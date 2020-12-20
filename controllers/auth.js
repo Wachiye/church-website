@@ -3,20 +3,23 @@ const jwt = require("jwt-simple");
 const db = require("../models");
 const Login = db.Login;
 const User = db.User;
-const bycypt = require("bcrypt");
+const bcrypt = require("bcrypt");
+const responseHandler = require('../utils/responseHandler');
 
 exports.login = async(req, res, next) => {
     if(!req.body){
-        res.status(500).json({
-            message: "Error: Invalid username/password."
-        });
-        return;
+        return responseHandler.sendFailure(res,{
+           code: 400,
+           name: "missing_field",
+           message: "username/password missing"
+       });
     }
     if(!req.body.username || !req.body.password){
-        res.status(500).json({
-            message: "Error: Invalid Username/password"
+        return responseHandler.sendFailure(res,{
+            code: 400,
+            name: "missing_field",
+            message: "username/password missing"
         });
-        return;
     }
     let {username, password} = req.body;
 
@@ -27,19 +30,23 @@ exports.login = async(req, res, next) => {
     })
     .then( async user => {
         if(!user || (user  && user.length == 0)){
-            res.status(500).json({
-                message: `Error: No user exits with given username: ${username}`
-            });
-            return;
+            let err = {
+                code: 500,
+                name: "no_such_user",
+                message: `No user exits with given username: ${username}`
+            }
+            return responseHandler.sendFailure(res,err)
         }
         
-        const isPasswordMatch = await bycypt.compare(password, user.password);
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
 
         if(!isPasswordMatch){
-            res.status(404).json({
-                message: "Error: Passwords don't match."
-            });
-            return;
+            let err = {
+                code: 500,
+                name: "PASSWORD_ERR",
+                message: "Passwords don't match"
+            }
+            return responseHandler.sendFailure(res,err)
         }
         const token = jwt.encode(
             {
@@ -62,7 +69,7 @@ exports.login = async(req, res, next) => {
             })
         }
 
-        const user_data = {
+        const data = {
             first_name: user.first_name,
             last_name: user.last_name,
             phone: user.phone,
@@ -75,14 +82,17 @@ exports.login = async(req, res, next) => {
             role: user.role,
             type: user.type,
             image: user.image,
+            id: user.id,
             token
         }
-        return res.status(200).json({data: user_data});
+        return responseHandler.sendSuccess(res,data);
 
     })
     .catch(err => {
-        res.status(500).json({
-            message: err.message || "Error: Some error occurred while authenticating"
+        return responseHandler.sendFailure(res,{
+            code: 500,
+            name: "database_err",
+            message: err.message || null
         });
     });
 
@@ -94,19 +104,91 @@ exports.logout = (req, res, next) => {
         where:{user_id: req.user_id }, truncate: false
     })
     .then( nums => {
-        res.json({ 
-            message: "Your are logout."
-        });
-        
+        if(nums === 1)
+            return responseHandler.sendSuccess(res,{
+                message:'logout out'
+            },204);
+        else
+            return responseHandler.sendFailure(res,{
+                code: 500,
+                name: 'no_such_user',
+                message:'Could not logout user with given id. user not found'
+            })
     })
     .catch( err => {
-        res.status(500).json({
-            message: err.message || "Error: Unable to logout of the system. Try again later."
-        });
+        return responseHandler.sendFailure(res,{
+            code: 500,
+            name: 'database_err',
+            message: err.message || "Unable to logout of the system"
+        })
     });
    
 };
 
+exports.changePassword = async (req, res) => {
+    const id = req.body.user_id;
+    User.findByPk(id)
+    .then( async user => {
+        if(!user){
+            return responseHandler.sendFailure(res,{
+                code: 500,
+                name: "no_such_user",
+                message: `No user exits with given username/id: ${id}`
+            });
+        }
+        else{
+            const current_password = req.body.current_password,
+                new_password = req.body.new_password;
+
+            const isPasswordMatch = await bcrypt.compare(current_password, user.password);
+
+            if(!isPasswordMatch){
+                return responseHandler.sendFailure(res,{
+                    code: 500,
+                    name: "PASSWORD_ERR",
+                    message: "Passwords don't match"
+                })
+            }
+            else{
+              let password = await bcrypt.hashSync(new_password, 8);
+                User.update({password:password}, {
+                    where:{ id: id}
+                })
+                .then( num => {
+                    if(num == 1){
+                        return responseHandler.sendSuccess(res,{
+                            message:"password changed successfully"
+                        });
+                    }
+                    else{
+                        return responseHandler.sendFailure(res,{
+                           code: 500,
+                            name: "no_such_user",
+                            message: `cannot change password for user with id = ${id}. User not found or empty data received` 
+                        })
+                    }
+                })
+                .catch( err => {
+                    return responseHandler.sendFailure(res,{
+                        code: 500,
+                        name: 'database_err',
+                        message: err.message || "An error occurred while processing your request"
+                    });
+                });  
+            }
+        }
+    })
+    .catch(err => {
+        console.log(err)
+        err = {
+            code: err.code || 500,
+            name: err.name || 'database_err',
+            message: err.message || null
+        }
+        return responseHandler.sendFailure(res,err)
+    });
+    
+};
 var generateAuthToken = (user) =>{
     const token = jwt.sign({
         id: user.id,

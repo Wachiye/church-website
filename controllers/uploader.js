@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 var cloudinary = require('cloudinary').v2;
-
+const responseHandler = require("../utils/responseHandler");
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
@@ -12,10 +12,12 @@ cloudinary.config({
 exports.upload = (req, res) => {
     return new Promise( (resolve, reject) => {
         if(!req.file){
-            res.status(400).json({
-                message: "Error: No files selected"
-            });
-            return;
+            return responseHandler.sendFailure(res, {
+                code: 400,
+                name: "file_upload_err",
+                message:
+                  "no file selected"
+              });
         }
         
         cloudinary.uploader.upload(req.file.path, (err, uploadedFile) =>{

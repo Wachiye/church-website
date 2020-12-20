@@ -1,8 +1,9 @@
 require("dotenv").config();
 
 const request = require("request");
+const moment = require('moment');
 
-exports.access = (req, res, next) => {
+exports.access = (req, resp, next) => {
     //Access token
     let consumer_key = process.env.MPESA_CONSUMER_KEY;
     let consumer_secret = process.env.MPESA_CONSUMER_SECRET; //your app consumer secret
@@ -13,9 +14,9 @@ exports.access = (req, res, next) => {
         Authorization: `Basic ${auth}`
     };
 
-    request({url:url, headers: headers}, (error, res, body) => {
+   request({url:url, headers: headers}, (error, res, body) => {
         if(error){
-            res.statusCode(500).json({
+            resp.statusCode(500).json({
                 message:"Error: Could not initiate mpesa transaction"
             })
         }
@@ -23,5 +24,6 @@ exports.access = (req, res, next) => {
             req.access_token = JSON.parse(body).access_token;
             next();
         }
-    });
+    })   
+            
 }

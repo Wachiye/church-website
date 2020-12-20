@@ -31,6 +31,18 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      check_out_id: {
+        type:Sequelize.STRING,
+        allowNull: false
+      },
+      name: {
+        type:Sequelize.STRING,
+        allowNull: false
+      },
+      phone: {
+        type:Sequelize.STRING,
+        allowNull: false
+      },
       amount:{
         type: Sequelize.DOUBLE(18, 2),
         defaultValue: 0.00
